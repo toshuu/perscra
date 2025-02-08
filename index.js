@@ -6,8 +6,10 @@ const PORT = process.env.PORT || 8080;
 
 app.get("/scrape", async (req, res) => {
     const site = req.query.site;
-    const fullPage = req.query.fullpage === "1"; // Ensure full page text extraction
-    const waitTime = parseInt(req.query.wait) || 0; // Optional delay before scraping
+    const fullPage = req.query.fullpage === "1"; // If fullpage=1, get full page text
+    const waitTime = parseInt(req.query.wait) || 0; // Delay before scraping
+    const selector = req.query.selector; // Target specific part of the page
+    const screenshot = req.query.screenshot === "1"; // Capture screenshot
     const userAgent = req.query.useragent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"; // Default user-agent
 
     if (!site) {
@@ -22,24 +24,36 @@ app.get("/scrape", async (req, res) => {
         });
 
         const page = await browser.newPage();
-        await page.setUserAgent(userAgent);
-        await page.goto(`https://${site}`, { waitUntil: "networkidle2" });
+        await page.setUserAgent(userAgent); // Set custom user agent
+        await page.goto(`https://${site}`, { waitUntil: "domcontentloaded" });
 
         if (waitTime) await page.waitForTimeout(waitTime); // Wait if needed
 
-        // ✅ Extract all text on the page, even from dynamically loaded content
-        const content = await page.evaluate(() => {
-            return document.body.innerText;
-        });
+        let content;
+        if (selector) {
+            // If a selector is provided, scrape only that section
+            content = await page.$eval(selector, (el) => el.innerText);
+        } else {
+            // Otherwise, scrape full page or only body text
+            content = fullPage
+                ? await page.evaluate(() => document.documentElement.innerText)
+                : await page.evaluate(() => document.body.innerText);
+        }
 
         const pageTitle = await page.title();
+        let screenshotBuffer = null;
+
+        if (screenshot) {
+            screenshotBuffer = await page.screenshot({ encoding: "base64" });
+        }
 
         await browser.close();
 
         res.json({
             site: site,
             title: pageTitle,
-            content: content.trim(), // Return full text from the page
+            content: content.substring(0, 5500), // Limit content for response
+            screenshot: screenshotBuffer ? `data:image/png;base64,${screenshotBuffer}` : null, // Returns base64 screenshot
         });
     } catch (error) {
         console.error("Error scraping:", error);
