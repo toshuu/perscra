@@ -18,10 +18,15 @@ app.get("/scrape", async (req, res) => {
 
     let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: ["--no-sandbox", "--disable-setuid-sandbox",  "--disable-dev-shm-usage"],
-        });
+       browser = await puppeteer.launch({
+    headless: "new",
+    executablePath: "/opt/render/.cache/puppeteer/chrome/linux-127.0.6533.88/chrome",
+    args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+    ],
+});
 
         const page = await browser.newPage();
         await page.setUserAgent(userAgent); // Set custom user agent
