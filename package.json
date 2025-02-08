@@ -8,6 +8,8 @@
     "puppeteer": "^21.11.0"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+	"postinstall": "npx puppeteer browsers install chrome"
+
   }
 }
