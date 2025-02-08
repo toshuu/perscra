@@ -1,3 +1,4 @@
-export PUPPETEER_EXECUTABLE_PATH="/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome"
+#!/bin/sh
+npx puppeteer browsers install chrome
 npm install
 npm start
